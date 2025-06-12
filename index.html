@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>오늘 뭐 마시지? - 술 룰렛</title>
+  <meta name="theme-color" content="#2563eb">
+  
+  <style>
+    :root {
+      --size: min(440px, 90vw);
+      --font-size-base: clamp(14px, 3vw, 16px);
+      --font-size-title: clamp(18px, 4vw, 24px);
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --danger-color: #e53e3e;
+      --danger-hover: #c53030;
+      --light-gray: #cbd5e0;
+      --medium-gray: #a0aec0;
+      --dark-gray: #4a5568;
+      --bg-gradient-start: #0f0f23;
+      --bg-gradient-end: #1a1a2e;
+      --accent-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 50%, #16213e 100%);
+      padding: 20px 16px;
+      touch-action: manipulation;
+      overflow-x: hidden;
+      position: relative;
+      color: #ffffff;
+      min-height: 100vh;
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.08) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 80%, rgba(120, 219, 226, 0.06) 0%, transparent 50%);
+      z-index: -1;
+      pointer-events: none;
+    }
+    
+    .main-title {
+      font-size: clamp(28px, 7vw, 36px);
+      font-weight: 800;
+      margin-bottom: 2.5rem;
+      text-align: center;
+      background: var(--accent-gradient);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 30px rgba(102, 126, 234, 0.3);
+      letter-spacing: -0.5px;
+      position: relative;
+    }
+    
+    .main-title::after {
+      content: '🥂✨';
+      position: absolute;
+      right: -60px;
+      top: -5px;
+      font-size: 0.6em;
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(5deg); }
+    }
+    
+    #controls {
+      display: flex;
+      gap: 0.7rem;
+      margin-bottom: 2.8rem;
+      width: var(--size);
+      max-width: 100%;
+    }
+    
+    #controls input {
+      padding: 0.8rem 1.2rem;
+      flex: 1;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      font-size: var(--font-size-base);
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    #controls input::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+    
+    #controls input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3), 0 4px 15px rgba(0, 0, 0, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    
+    #controls button {
+      padding: 0.8rem 1.5rem;
+      font-size: var(--font-size-base);
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    #controls button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    #controls button:active {
+      transform: translateY(0px);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    #wheel-container {
+      position: relative;
+      width: var(--size);
+      height: var(--size);
+      margin-bottom: 1rem;
+      touch-action: none;
+    }
+    
+    #wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      transform-origin: 50% 50%;
+      box-shadow: 
+        inset 0 0 50px rgba(255, 255, 255, 0.1),
+        0 0 50px rgba(102, 126, 234, 0.2),
+        0 20px 40px rgba(0, 0, 0, 0.3);
+      filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+      touch-action: none;
+      border: 3px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .pointer {
+      --h: 32px;
+      position: absolute;
+      top: calc(var(--h) * -1 + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 18px solid transparent;
+      border-right: 18px solid transparent;
+      border-top: var(--h) solid #ffffff;
+      filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.4));
+      margin-top: 2px;
+      z-index: 5;
+    }
+    
+    svg path {
+      cursor: pointer;
+      transition: all 0.3s ease;
+      touch-action: none;
+      stroke: rgba(255, 255, 255, 0.2);
+      stroke-width: 1px;
+    }
+    
+    svg path:hover { 
+      filter: brightness(1.2) saturate(1.3);
+      transform: scale(1.02);
+      transform-origin: center;
+    }
+    
+    svg text {
+      font-size: min(16px, 3.8vw);
+      fill: #ffffff;
+      font-weight: 700;
+      text-anchor: middle;
+      alignment-baseline: middle;
+      pointer-events: auto;
+      paint-order: stroke;
+      stroke: rgba(0, 0, 0, 0.8);
+      stroke-width: 2px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+    
+    svg text:hover { 
+      font-weight: 800; 
+      transform: scale(1.1); 
+      filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
+    }
+
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      width: var(--size);
+      max-width: 100%;
+    }
+
+    #spin {
+      padding: 1rem 0;
+      font-size: clamp(16px, 4vw, 18px);
+      font-weight: 700;
+      border: none;
+      border-radius: 15px;
+      background: linear-gradient(135deg, #ff6b6b, #ee5a52, #ff8e53);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 200px;
+      height: 54px;
+      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    #spin::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+    
+    #spin:hover::before {
+      left: 100%;
+    }
+    
+    #spin:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(255, 107, 107, 0.5);
+    }
+    
+    #spin:active {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+    }
+    
+    #spin:disabled {
+      background: linear-gradient(135deg, #6b7280, #9ca3af);
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    #reset-btn {
+      background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+      padding: 1rem 1.2rem;
+      font-size: var(--font-size-base);
+      font-weight: 600;
+      border-radius: 15px;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      height: 54px;
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    
+    #reset-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+    }
+    
+    #reset-btn:active {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+    }
+
+    #result {
+      margin-top: 1.5rem;
+      font-size: calc(var(--font-size-base) * 1.1);
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.8);
+      min-height: 1.8rem;
+      text-align: center;
+      width: 100%;
+      padding: 0 16px;
+      transition: opacity 0.3s ease;
+    }
+
+    .result-popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      backdrop-filter: blur(5px);
+    }
+
+    .result-popup.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .popup-content {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      border-radius: 20px;
+      padding: 35px 40px;
+      text-align: center;
+      box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      max-width: 90%;
+      width: 320px;
+      transform: scale(0.8) translateY(20px);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .result-popup.show .popup-content {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+
+    .popup-title {
+      font-size: clamp(20px, 5vw, 24px);
+      color: rgba(255, 255, 255, 0.95);
+      margin-bottom: 10px;
+      line-height: 1.4;
+      font-weight: 600;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .popup-title small {
+      font-size: 0.75em; 
+      opacity: 0.9; 
+      display: block; 
+      margin-top: 6px; 
+      font-weight: 400;
+    }
+
+    .popup-result {
+      font-size: clamp(26px, 8vw, 32px);
+      font-weight: 800;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      padding: 15px 25px;
+      border-radius: 15px;
+      margin: 20px 0 30px;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      display: inline-block;
+      word-break: keep-all;
+      box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .popup-result span {
+      display: inline-block;
+      margin-left: 10px;
+      transform: translateY(2px);
+      animation: bounce 1s ease infinite;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(2px); }
+      50% { transform: translateY(-3px); }
+    }
+
+    .popup-close {
+      color: rgba(255, 255, 255, 0.95);
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 12px 30px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .popup-close:hover {
+      background: rgba(0, 0, 0, 0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .popup-close:active {
+      transform: translateY(0px);
+    }
+
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background-color: #f00;
+      border-radius: 50%;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1001;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding-top: 20px;
+        padding-bottom: 20px;
+      }
+      .main-title {
+        font-size: 24px;
+        margin-bottom: 2rem;
+      }
+      .main-title::after {
+        right: -50px;
+        font-size: 0.7em;
+      }
+      #controls {
+        flex-direction: column;
+        gap: 0.8rem;
+        margin-bottom: 2rem;
+      }
+      #controls input, #controls button {
+        width: 100%;
+      }
+      #wheel-container {
+        margin-top: 10px;
+        margin-bottom: 1.5rem;
+      }
+      .pointer {
+        --h: 28px;
+        border-left-width: 16px;
+        border-right-width: 16px;
+      }
+      .action-buttons {
+        flex-direction: column;
+        gap: 0.8rem;
+        width: 100%;
+        max-width: 280px;
+        margin: 1.5rem auto;
+      }
+      #spin, #reset-btn {
+        width: 100%;
+      }
+      .popup-content {
+        padding: 30px 25px;
+        width: 90%;
+        max-width: 320px;
+      }
+      .popup-title { font-size: 18px; }
+      .popup-result { font-size: 24px; }
+      .popup-close { font-size: 15px; padding: 10px 25px; }
+    }
+  </style>
+</head>
+<body>
+  <h1 class="main-title">오늘 뭐 마시지?</h1>
+
+  <div id="controls">
+    <input id="new-item" placeholder="술 종류 추가..." aria-label="새 술 종류 추가"/>
+    <button id="add-item">추가</button>
+  </div>
+
+  <div id="wheel-container">
+    <div class="pointer"></div>
+    <svg id="wheel" viewBox="-200 -200 400 400"></svg>
+  </div>
+
+  <div class="action-buttons">
+    <button id="spin">마시자, 마셔~! 🍺</button>
+    <button id="reset-btn" title="항목 초기화">초기화</button>
+  </div>
+
+  <div id="result"></div>
+
+  <div class="result-popup" id="resultPopup">
+    <div class="popup-content">
+      <h2 class="popup-title" id="popupTitle">오늘의 선택은!</h2>
+      <div class="popup-result" id="popupResult">결과</div>
+      <button class="popup-close" id="popupClose">닫기</button>
+    </div>
+  </div>
+
+<script>
+   // 간단한 애니메이션 함수 (GSAP 대체)
+   function animateElement(element, properties, duration = 1000, easing = 'ease-out') {
+     const startValues = {};
+     const endValues = {};
+     
+     for (let prop in properties) {
+       if (prop === 'rotation') {
+         startValues[prop] = parseFloat(element.style.transform.match(/rotate\(([^)]+)deg\)/)?.[1] || 0);
+         endValues[prop] = properties[prop];
+       } else {
+         startValues[prop] = parseFloat(getComputedStyle(element)[prop] || 0);
+         endValues[prop] = properties[prop];
+       }
+     }
+     
+     const startTime = performance.now();
+     
+     function update(currentTime) {
+       const elapsed = currentTime - startTime;
+       const progress = Math.min(elapsed / duration, 1);
+       
+       // Easing function
+       const easedProgress = easing === 'ease-out' ? 1 - Math.pow(1 - progress, 3) : progress;
+       
+       for (let prop in properties) {
+         const current = startValues[prop] + (endValues[prop] - startValues[prop]) * easedProgress;
+         
+         if (prop === 'rotation') {
+           element.style.transform = `rotate(${current}deg)`;
+         } else if (prop === 'opacity') {
+           element.style.opacity = current;
+         } else if (prop === 'x' || prop === 'y') {
+         //   const transform = element.style.transform || '';
+         //   if (prop === 'x') {
+         //     element.style.transform = transform.replace(/translateX\([^)]*\)/, '') + ` translateX(${current}px)`;
+         //   } else {
+         //     element.style.transform = transform.replace(/translateY\([^)]*\)/, '') + ` translateY(${current}px)`;
+         //   }
+         // }
+            if (prop === 'x') {
+              element.style.left = current + 'px';
+            } else if (prop === 'y') {
+              element.style.top = current + 'px';
+            }
+          }    
+       }
+       
+       if (progress < 1) {
+         requestAnimationFrame(update);
+       } else if (properties.onComplete) {
+         properties.onComplete();
+       }
+     }
+     
+     requestAnimationFrame(update);
+   }
+
+   // Constants
+   const FULL_CIRCLE = 360;
+   const POINTER_POSITION = 270;
+   const STORAGE_KEY = 'drinkRouletteItems_v1';
+   const DEFAULT_ITEMS = ["소주", "맥주", "와인", "위스키", "막걸리", "칵테일", "사케", "고량주", "럼", "진", "보드카", "하이볼"];
+   const COLORS = [
+     "#FF6B9D", "#C44569", "#F8B500", "#6C5CE7", "#A29BFE", "#00CEC9",
+     "#00B894", "#FDCB6E", "#E17055", "#FF7675", "#74B9FF", "#FD79A8",
+     "#E84393", "#00B894", "#55A3FF", "#FFA726", "#AB47BC", "#42A5F5"
+   ];
+   const CELEBRATION_EMOJIS = ["🍺", "🍻", "🥂", "🍷", "🍸", "🍹", "🥃", "🍾", "🎉", "🥳", "😋", "🤤"];
+   const CELEBRATION_MESSAGES = [
+     "오늘 밤은 이걸로!", "완벽한 선택이야!", "분위기 끝내주겠다~",
+     "이거 한 잔 어때?", "오늘 밤의 주인공!", "분위기 메이커 등장!",
+     "건배하자! 🥂", "오늘은 이걸로 결정!", "최고의 선택!", "오늘 밤 이게 답이야!",
+     "딱 오늘 분위기네!", "이거 마시고 신나게!", "오늘 밤의 베스트!", "분위기 업 시켜버리자!"
+   ];
+
+   // State Variables
+   let items = [];
+   let segmentPositions = [];
+   let spinning = false;
+   let currentRotation = 0;
+   let storageAvailable = false;
+
+   // DOM Elements
+   let wheel, spinBtn, addBtn, input, result, resetBtn;
+   let resultPopup, popupTitle, popupResult, popupClose;
+
+   // Initialization
+   document.addEventListener('DOMContentLoaded', initializeApp);
+
+   function initializeApp() {
+     wheel = document.getElementById('wheel');
+     spinBtn = document.getElementById('spin');
+     addBtn = document.getElementById('add-item');
+     input = document.getElementById('new-item');
+     result = document.getElementById('result');
+     resetBtn = document.getElementById('reset-btn');
+     resultPopup = document.getElementById('resultPopup');
+     popupTitle = document.getElementById('popupTitle');
+     popupResult = document.getElementById('popupResult');
+     popupClose = document.getElementById('popupClose');
+
+     checkStorage();
+     loadItems();
+     buildWheel();
+     setupEventListeners();
+   }
+
+   function checkStorage() {
+     try {
+       const test = '__storage_test__';
+       localStorage.setItem(test, test);
+       localStorage.removeItem(test);
+       storageAvailable = true;
+     } catch (e) {
+       storageAvailable = false;
+       console.warn('localStorage를 사용할 수 없습니다. 변경사항이 저장되지 않습니다.');
+     }
+   }
+
+   function loadItems() {
+     let loaded = false;
+     if (storageAvailable) {
+       try {
+         const savedItems = localStorage.getItem(STORAGE_KEY);
+         if (savedItems) {
+           const parsedItems = JSON.parse(savedItems);
+           if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+             items = parsedItems;
+             loaded = true;
+           }
+         }
+       } catch (e) {
+         console.error('저장된 항목 로딩 오류:', e);
+         if (storageAvailable) localStorage.removeItem(STORAGE_KEY);
+       }
+     }
+     if (!loaded) {
+       items = [...DEFAULT_ITEMS];
+       if (storageAvailable) saveItems();
+     }
+   }
+
+   function saveItems() {
+     if (!storageAvailable) return;
+     try {
+       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+     } catch (e) {
+       console.error('항목 저장 오류:', e);
+       displayTemporaryMessage('항목 저장 중 오류 발생', true);
+     }
+   }
+
+   function buildWheel() {
+     wheel.innerHTML = '';
+     segmentPositions = [];
+
+     const enableButtons = items.length >= 2;
+     spinBtn.disabled = spinning || !enableButtons;
+     resetBtn.disabled = spinning;
+
+     if (items.length === 0) {
+       result.textContent = '술 종류가 없습니다. 마실 것을 추가해주세요!';
+       spinBtn.disabled = true;
+       return;
+     }
+
+     const segmentAngle = FULL_CIRCLE / items.length;
+
+     items.forEach((item, i) => {
+       const startAngle = i * segmentAngle;
+       const endAngle = (i + 1) * segmentAngle;
+       segmentPositions.push({ item: item, startAngle: startAngle, endAngle: endAngle });
+
+       const startRad = startAngle * Math.PI / 180;
+       const endRad = endAngle * Math.PI / 180;
+       const x1 = 200 * Math.cos(startRad);
+       const y1 = 200 * Math.sin(startRad);
+       const x2 = 200 * Math.cos(endRad);
+       const y2 = 200 * Math.sin(endRad);
+       const largeArcFlag = segmentAngle > 180 ? 1 : 0;
+       const pathData = `M 0 0 L ${x1} ${y1} A 200 200 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+
+       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+       path.setAttribute('d', pathData);
+       path.setAttribute('fill', COLORS[i % COLORS.length]);
+       path.style.cursor = 'pointer';
+       path.addEventListener('click', () => removeItem(i));
+
+       const titleElement = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+       titleElement.textContent = `${item} (클릭하여 제거)`;
+       path.appendChild(titleElement);
+       wheel.appendChild(path);
+
+       // Create SVG Text
+       const midAngle = startAngle + segmentAngle / 2;
+       const midRad = midAngle * Math.PI / 180;
+       const textRadius = items.length <= 6 ? 110 : 125;
+       const tx = textRadius * Math.cos(midRad);
+       const ty = textRadius * Math.sin(midRad);
+       let textRotation = midAngle;
+       if (textRotation > 90 && textRotation < 270) {
+         textRotation += 180;
+       }
+
+       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+       text.setAttribute('x', tx);
+       text.setAttribute('y', ty);
+       text.setAttribute('transform', `rotate(${textRotation} ${tx} ${ty})`);
+       const maxLen = items.length > 10 ? 7 : (items.length > 6 ? 9 : 12);
+       text.textContent = item.length > maxLen ? item.substring(0, maxLen - 1) + '…' : item;
+       text.style.cursor = 'pointer';
+       text.addEventListener('click', (e) => {
+         e.stopPropagation();
+         removeItem(i);
+       });
+
+       const textTitleElement = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+       textTitleElement.textContent = `${item} (클릭하여 제거)`;
+       text.appendChild(textTitleElement);
+       wheel.appendChild(text);
+     });
+   }
+
+   function addItem() {
+     const value = input.value.trim();
+     if (value && items.length < 20) {
+       if (!items.includes(value)) {
+         items.push(value);
+         input.value = '';
+         buildWheel();
+         saveItems();
+         displayTemporaryMessage(`"${value}" 추가됨`);
+       } else {
+         displayTemporaryMessage(`"${value}"은(는) 이미 있어요`, true);
+       }
+     } else if (items.length >= 20) {
+       displayTemporaryMessage('술 종류는 최대 20개까지 추가 가능해요', true);
+     } else if (!value) {
+       displayTemporaryMessage('추가할 술 이름을 입력해주세요', true);
+     }
+     input.focus();
+   }
+
+   function removeItem(index) {
+     if (spinning || index < 0 || index >= items.length) return;
+
+     const removedItem = items[index];
+     items.splice(index, 1);
+
+     buildWheel();
+     saveItems();
+     displayTemporaryMessage(`"${removedItem}" 제거됨`);
+
+     if (items.length === 0) {
+       result.textContent = '모든 술이 제거되었습니다. 새로운 술을 추가해주세요.';
+     } else if (items.length < 2) {
+       spinBtn.disabled = true;
+     }
+   }
+
+   function resetAllItems() {
+     if (spinning) return;
+
+     if (!confirm('모든 항목을 기본 설정으로 초기화하시겠습니까? 현재 목록은 사라집니다.')) {
+       return;
+     }
+
+     items = [...DEFAULT_ITEMS];
+     saveItems();
+     buildWheel();
+     displayTemporaryMessage('항목이 기본값으로 초기화되었습니다.');
+   }
+
+   function getResultItem(rotation) {
+     if (items.length === 0) return null;
+     const finalRotation = (rotation % FULL_CIRCLE + FULL_CIRCLE) % FULL_CIRCLE;
+     const targetAngle = (POINTER_POSITION - finalRotation + FULL_CIRCLE) % FULL_CIRCLE;
+
+     const winningSegment = segmentPositions.find(seg => {
+       if (seg.startAngle > seg.endAngle) {
+         return targetAngle >= seg.startAngle || targetAngle < seg.endAngle;
+       }
+       return targetAngle >= seg.startAngle && targetAngle < seg.endAngle;
+     });
+
+     return winningSegment ? winningSegment.item : null;
+   }
+
+   function spinWheel() {
+     if (spinning || items.length < 2) {
+       if (items.length < 2) {
+         displayTemporaryMessage('룰렛을 돌리려면 술이 2개 이상 필요해요', true);
+       }
+       return;
+     }
+
+     spinning = true;
+     result.textContent = '';
+     spinBtn.disabled = true;
+     resetBtn.disabled = true;
+
+     // 일관된 회전수로 수정
+     const randomRotations = Math.floor(Math.random() * 2) + 5; // 5-6회전으로 제한
+     const randomAngle = Math.random() * FULL_CIRCLE;
+     const spinAngle = (randomRotations * FULL_CIRCLE) + randomAngle;
+     // currentRotation을 누적하지 말고 항상 새로운 절댓값으로 계산
+     const targetRotation = currentRotation + spinAngle;
+
+     // 회전수에 비례한 지속시간 계산
+     const rotationDuration = Math.min(3000 + (randomRotations * 400), 5000); // 3-5초 범위
+
+     animateElement(wheel, {
+       rotation: targetRotation,
+       onComplete: () => {
+         currentRotation = targetRotation;
+         const winningItem = getResultItem(targetRotation);
+
+         if (winningItem) {
+           setTimeout(() => showResultPopup(winningItem), 150);
+         } else {
+           console.error("결과 항목을 찾을 수 없습니다!", targetRotation);
+           displayTemporaryMessage('오류: 결과를 결정할 수 없습니다.', true);
+         }
+
+         spinning = false;
+         spinBtn.disabled = items.length < 2;
+         resetBtn.disabled = false;
+       }
+     }, rotationDuration); // duration 파라미터 추가
+   }
+
+   // --- Popup Handling ---
+   function showResultPopup(resultItem) {
+     const randomMessage = CELEBRATION_MESSAGES[Math.floor(Math.random() * CELEBRATION_MESSAGES.length)];
+     popupTitle.innerHTML = `오늘의 선택은! <small>${randomMessage}</small>`;
+
+     const randomEmoji = CELEBRATION_EMOJIS[Math.floor(Math.random() * CELEBRATION_EMOJIS.length)];
+     popupResult.innerHTML = `${resultItem} <span>${randomEmoji}</span>`;
+
+     resultPopup.classList.add('show');
+     setTimeout(createConfetti, 250);
+   }
+
+   function hideResultPopup() {
+     resultPopup.classList.remove('show');
+     setTimeout(() => {
+       const existingConfetti = resultPopup.querySelectorAll('.confetti');
+       existingConfetti.forEach(item => item.remove());
+     }, 400);
+   }
+
+   // --- Confetti Effect (GSAP 없이 순수 JS로 구현) ---
+   function createConfetti() {
+     const popupContentElement = resultPopup.querySelector('.popup-content');
+     if (!popupContentElement) return;
+
+     const existingConfetti = popupContentElement.querySelectorAll('.confetti');
+     existingConfetti.forEach(item => item.remove());
+     const confettiCount = 60;
+
+     for (let i = 0; i < confettiCount; i++) {
+       const confetti = document.createElement('div');
+       confetti.className = 'confetti';
+       confetti.style.backgroundColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+       const size = Math.random() * 8 + 4;
+       confetti.style.width = `${size}px`;
+       confetti.style.height = `${size * (Math.random() * 0.5 + 0.75)}px`;
+       confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+       confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+
+       const startX = popupContentElement.offsetWidth / 2;
+       const startY = popupContentElement.offsetHeight * 0.4;
+       confetti.style.left = `${startX}px`;
+       confetti.style.top = `${startY}px`;
+       confetti.style.position = 'absolute';
+       confetti.style.opacity = '1'; // 초기 opacity 명시적 설정
+       confetti.style.zIndex = '1002';
+       popupContentElement.appendChild(confetti);
+
+       // GSAP 대신 animateElement 사용
+       const endX = (Math.random() - 0.5) * popupContentElement.offsetWidth * 1.8;
+       const endY = Math.random() * popupContentElement.offsetHeight * 1.5;
+       
+       // // CSS transition 사용하는 방식으로 변경
+       // confetti.style.transition = `all ${1.8 + Math.random() * 2.2}s ease-out`;
+       // confetti.style.transform = `translateX(${endX}px) translateY(${endY}px) rotate(${Math.random() * 720 - 360}deg)`;
+       // confetti.style.opacity = '0';
+       
+       // 회전 애니메이션 별도 적용
+       setTimeout(() => {
+          confetti.style.transition = `all ${1.8 + Math.random() * 2.2}s ease-out`;
+          confetti.style.transform = `translateX(${endX}px) translateY(${endY}px) rotate(${Math.random() * 720 - 360}deg)`;
+          confetti.style.opacity = '0';
+        }, 10); // 약간의 지연으로 transition이 적용되도록
+       
+       // 정리
+       setTimeout(() => {
+         if (confetti.parentNode) confetti.remove();
+       }, 4000);
+     }
+   }
+
+   // --- Utility Functions ---
+   let messageTimeout;
+   function displayTemporaryMessage(message, isWarning = false) {
+     clearTimeout(messageTimeout);
+     result.textContent = message;
+     result.style.color = isWarning ? '#ff6b6b' : 'rgba(255, 255, 255, 0.8)';
+     result.style.opacity = 1;
+
+     messageTimeout = setTimeout(() => {
+       if (result.textContent === message) {
+         result.style.opacity = 0;
+         setTimeout(() => {
+           if (result.style.opacity == 0) result.textContent = '';
+         }, 300);
+       }
+     }, 3000);
+   }
+
+   // --- Event Listeners Setup ---
+   function setupEventListeners() {
+     // Add Item
+     addBtn.addEventListener('click', addItem);
+     input.addEventListener('keyup', (e) => { if (e.key === 'Enter') addItem(); });
+
+     // Reset Items
+     resetBtn.addEventListener('click', resetAllItems);
+
+     // Spin Wheel
+     spinBtn.addEventListener('click', spinWheel);
+     spinBtn.addEventListener('touchstart', (e) => { e.preventDefault(); spinWheel(); }, { passive: false });
+
+     // Close Popup
+     popupClose.addEventListener('click', hideResultPopup);
+     resultPopup.addEventListener('click', (e) => { if (e.target === resultPopup) hideResultPopup(); });
+   }
+
+</script>
