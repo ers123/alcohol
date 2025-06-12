@@ -6,6 +6,22 @@
   <title>오늘 뭐 마시지? - 술 룰렛</title>
   <meta name="theme-color" content="#2563eb">
   
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="drink_icon.png">
+  <link rel="apple-touch-icon" href="drink_icon.png">
+
+  <!-- Open Graph / Twitter 카드  -->
+  <meta property="og:type"        content="website">
+  <meta property="og:title"       content="오늘 뭐 마시지? - 술 룰렛">
+  <meta property="og:description" content="룰렛을 돌려 오늘의 술을 랜덤으로 선택하세요.">
+  <meta property="og:image"       content="drink_image.png">
+  <meta property="og:url"         content="https://ers123.github.io/alcohol/">
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="오늘 뭐 마시지? - Drink Roulette">
+  <meta name="twitter:description" content="룰렛을 돌려 오늘 마실 술을 랜덤으로 선택하세요.">
+  <meta name="twitter:image"       content="drink_image.png">
+  <!-- ▲▲ 새로 추가 ▲▲ -->
+
   <style>
     :root {
       --size: min(440px, 90vw);
@@ -960,4 +976,12 @@
      resultPopup.addEventListener('click', (e) => { if (e.target === resultPopup) hideResultPopup(); });
    }
 
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js');
+      });
+    }
+
 </script>
+</body>
+</html>
